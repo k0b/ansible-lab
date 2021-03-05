@@ -1,0 +1,12 @@
+---
+- name: show return valule of command module
+  hosts: linux
+  tasks:
+          - name: capture output id command
+            command: id -un
+            register: login
+          - name: Login output
+            debug:
+              msg: Logged in as user {{ login.stdout }} 
+...
+
