@@ -1,4 +1,4 @@
-# Defines Vagrant environment
+# Defines our Vagrant environment
 #
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
@@ -6,83 +6,60 @@
 
 Vagrant.configure("2") do |config|
 
-  # create mgmt node
-
-  config.vm.define :mgmt do |mgmt_config|
-      mgmt_config.vm.box = "xianlin/rhel-7"
-      mgmt_config.vm.hostname = "mgmt"
-      mgmt_config.vm.network :private_network, ip: "10.0.15.10"
-      mgmt_config.vm.provider "virtualbox" do |vb, override|
-        vb.memory = "256"
-        vb.customize [
-          "modifyvm", :id,
-          "--natdnshostresolver1", "on",
-          # some systems also need this:
-         # "--natdnshostresolver2", "on"
-        ]
-      end
-#      mgmt_config.vm.provision :shell, path: "bootstrap-mgmt.sh"
-  end
-
-  # create load balancer
-
-  config.vm.define :lb do |lb_config|
-      lb_config.vm.box = "bknight/consul-host"
-      lb_config.vm.hostname = "lb"
-      lb_config.vm.network :private_network, ip: "10.0.15.11"
-      lb_config.vm.provider "virtualbox" do |vb, override|
-        vb.memory = "256"
-        vb.customize [
-          "modifyvm", :id,
-          "--natdnshostresolver1", "on",
-          # some systems also need this:
-          # "--natdnshostresolver2", "on"
-        ]
-      end
-  end
-  
-  # create ansible tower vm
-  
-  config.vm.define :tower do |tower_config|
-      tower_config.vm.box = "ansible/tower"
-      tower_config.vm.hostname = "tower"
-      tower_config.vm.network :private_network, ip: "10.0.15.20"
-      tower_config.vm.provider "virtualbox" do |vb, override|
-        vb.memory = "1024"
-        vb.customize [
-          "modifyvm", :id,
-          "--natdnshostresolver1", "on"
-        ]
-      end
-  end
-
   # create some ubuntu servers
 
   # https://docs.vagrantup.com/v2/vagrantfile/tips.html
 
-  (1..3).each do |i|
-    config.vm.define "ubuntu#{i}" do |node|
-        node.vm.box = "ubuntu/trusty64"
-        node.vm.hostname = "ubuntu#{i}"
-        node.vm.network :private_network, ip: "10.0.15.2#{i}"
-        node.vm.network "forwarded_port", guest: 80, host: "808#{i}"
-        node.vm.network "forwarded_port", guest: 443, host: "844#{i}"
-        node.vm.provider "virtualbox" do |vb|
-          vb.memory = "256"
+  (1..2).each do |i|
+    config.vm.define "ubuntu#{i}" do |web_conf|
+        web_conf.vm.box = "generic/ubuntu2010"
+        web_conf.vm.hostname = "ubuntu#{i}"
+        web_conf.vm.network :private_network, ip: "192.168.180.2#{i}"
+        web_conf.vm.network "forwarded_port", guest: 80, host: "808#{i}"
+        web_conf.vm.provider "vmware_workstation" do |vb|
+          vb.vmx["memsize"] = 512
+          vb.vmx["ethernet0.pcislotnumber"] = "32"
+          vb.vmx["ethernet1.pcislotnumber"] = "33"
+          vb.vmx["ethernet1.vnet"] = "/dev/vmnet8"
         end
     end
   end
 
-  # create some rhel servers
+  # create mgmt node
 
-  (1..3).each do |i|
-    config.vm.define "rhel#{i}" do |node|
-        node.vm.box = "generic/rhel7"
-        node.vm.hostname = "rhel#{i}"
-        node.vm.network :private_network, ip: "10.0.15.3#{i}"
-        node.vm.network "forwarded_port", guest: 80, host: "809#{i}"
-        node.vm.provider "virtualbox" do |vb|
-          vb.memory = "256"
+  config.vm.define :mgmt do |mgmt_conf|
+      mgmt_conf.vm.box = "generic/centos8"
+      mgmt_conf.vm.hostname = "mgmt"
+      mgmt_conf.vm.network :private_network, ip: "192.168.180.10"
+      mgmt_conf.vm.provider "vmware_workstation" do |vb|
+        vb.vmx["memsize"] = 1024
+        vb.vmx["ethernet1.vnet"] = "/dev/vmnet8"
+      end
+#      mgmt_config.vm.provision :shell, path: "bootstrap-mgmt.sh"
+  end
+
+  # create lb node
+
+  config.vm.define :lb do |lb_conf|
+      lb_conf.vm.box = "generic/centos8"
+      lb_conf.vm.hostname = "lb"
+      lb_conf.vm.network :private_network, ip: "192.168.180.100"
+      lb_conf.vm.provider "vmware_workstation" do |vb|
+        vb.vmx["memsize"] = 512
+        vb.vmx["ethernet1.vnet"] = "/dev/vmnet8"
+      end
+  end
+
+  # create some db servers
+
+  (1..1).each do |i|
+    config.vm.define "db#{i}" do |db_conf|
+        db_conf.vm.box = "generic/centos8"
+        db_conf.vm.hostname = "db#{i}"
+        db_conf.vm.network :private_network, ip: "192.168.180.3#{i}"
+        db_conf.vm.provider "vmware_workstation" do |vb|
+          vb.vmx["memsize"] = 512
+          vb.vmx["ethernet1.vnet"] = "/dev/vmnet8"
         end
     end
   end
