@@ -5,15 +5,15 @@
 
 
 Vagrant.configure("2") do |config|
-
+  
   # create some ubuntu servers
 
   # https://docs.vagrantup.com/v2/vagrantfile/tips.html
 
   (1..2).each do |i|
-    config.vm.define "ubuntu#{i}" do |web_conf|
+    config.vm.define "web#{i}" do |web_conf|
         web_conf.vm.box = "generic/ubuntu2010"
-        web_conf.vm.hostname = "ubuntu#{i}"
+        web_conf.vm.hostname = "web#{i}"
         web_conf.vm.network :private_network, ip: "192.168.180.2#{i}"
         web_conf.vm.network "forwarded_port", guest: 80, host: "808#{i}"
         web_conf.vm.provider "vmware_workstation" do |vb|
@@ -31,6 +31,7 @@ Vagrant.configure("2") do |config|
       mgmt_conf.vm.box = "generic/centos8"
       mgmt_conf.vm.hostname = "mgmt"
       mgmt_conf.vm.network :private_network, ip: "192.168.180.10"
+      mgmt_conf.vm.synced_folder ".", "/vagrant", disabled: false
       mgmt_conf.vm.provider "vmware_workstation" do |vb|
         vb.vmx["memsize"] = 1024
         vb.vmx["ethernet1.vnet"] = "/dev/vmnet8"
