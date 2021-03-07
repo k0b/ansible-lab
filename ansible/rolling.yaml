@@ -1,0 +1,117 @@
+---
+# common
+#
+- name: Install common packages and update packages
+  hosts: linux
+
+  tasks:
+    - name: Install git package and update Ubuntu
+      apt: 
+        name: git
+        state: latest
+        update_cache: yes
+      when: ansible_distribution == "Ubuntu"
+
+    - name: Install git package and update CentOS
+      dnf:
+        name: 
+      #    - "*"
+          - git
+        state: latest
+      when: ansible_distribution == "CentOS" 
+
+
+# web
+#
+- name: Deploy web nginx servers
+  hosts: web
+  vars:
+    app_version: release-0.01
+  serial: 1
+
+#  pre_tasks:
+#
+#  - name: Disable server in HAproxy
+#    shell: echo "disable server {{ inventory_hostname }}" | socat stdio /var/lib/haproxy/stats
+#    delegate_to: "{{ item }}"
+#    with_item: groups.lb
+#    
+  tasks:
+
+  - name: Install nginx
+    apt:
+      name: nginx
+      state: latest
+
+  - name: Write out nginx.conf
+    template:
+      src: templates/nginx.conf.j2
+      dest: /etc/nginx/nginx.conf
+    notify: restart nginx
+
+  - name: Wite out /etc/nginx/sites-available/default
+    template:
+      src: templates/default-site.j2
+      dest: /etc/nginx/sites-available/default
+    notify: restart nginx
+
+  - name: Clean existing website content
+    file:
+      path: /usr/share/nginx/html
+      state: absent
+
+  - name: deploy website content
+    git:
+      repo: https://github.com/jweissig/episode-47.git
+      dest: /usr/share/nginx/html/
+      version: "{{ app_version }}"
+
+  handlers:
+    
+  - name: restart nginx
+    service:
+      name: nginx
+      state: restarted
+
+#  post_tasks:
+#
+#  - name: Enable server in HAProxy
+#    shell: echo "enable server {{ inventory_hostname }}" | socat stdio /var/lib/haproxy/stats
+#    delegate_to: "{{ item }}"
+#    with_items: groups.loadbalancer
+#
+# lb
+#
+- name: Deploy and configure HAProxy load balancer
+  hosts: lb
+
+  tasks:
+
+  - name: Install HAProxy and socat
+    dnf:
+      name:
+        - haproxy
+        - socat
+      state: latest
+
+#  - name: Enable HAProxy
+#    lineinfile:
+#      path: /etc/default/haproxy
+#      regexp: "^ENABLED"
+#      line: "ENABLED=1"
+#    notify: restart haproxy  
+
+  - name: Configure HAProxy config file with hosts
+    template:
+      src: templates/haproxy.cfg.j2
+      dest: /etc/haproxy/haproxy.cfg
+    notify: restart haproxy
+
+  handlers:
+    
+  - name: restart haproxy
+    service:
+      name: haproxy
+      state: restarted
+    
+...
