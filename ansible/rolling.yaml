@@ -94,19 +94,18 @@
         - socat
       state: latest
 
+  - name: Start HAProxy service
+    service:
+      name: haproxy
+      state: started
+      enabled: yes
+
   - name: Open on firewalld http and https ports
     firewalld:
       service: http
       permanent: yes
       state: enabled
     notify: reload firewalld  
-
-#  - name: Enable HAProxy
-#    lineinfile:
-#      path: /etc/default/haproxy
-#      regexp: "^ENABLED"
-#      line: "ENABLED=1"
-#    notify: restart haproxy  
 
   - name: Configure HAProxy config file with hosts
     template:
