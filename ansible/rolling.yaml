@@ -94,6 +94,13 @@
         - socat
       state: latest
 
+  - name: Open on firewalld http and https ports
+    firewalld:
+      service: http
+      permanent: yes
+      state: enabled
+    notify: reload firewalld  
+
 #  - name: Enable HAProxy
 #    lineinfile:
 #      path: /etc/default/haproxy
@@ -113,5 +120,10 @@
     service:
       name: haproxy
       state: restarted
+
+  - name: reload firewalld
+    service:
+      name: firewalld
+      state: reloaded
     
 ...
